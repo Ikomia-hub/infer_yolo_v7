@@ -76,6 +76,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         param_map["thr_conf"] = str(self.thr_conf)
         param_map["iou_conf"] = str(self.iou_conf)
         param_map["cuda"] = str(self.cuda)
+        param_map["custom_model"] = str(self.custom_model)
         return param_map
 
 
