@@ -133,8 +133,9 @@ class InferYoloV7(dataprocess.C2dImageTask):
 
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
         for p in pred:
-            box_score_cls = [int(e) for e in p.detach().cpu().numpy()]
+            box_score_cls = [e for e in p.detach().cpu().numpy()]
             box = box_score_cls[:4]
+            box = [int(b) for b in box]
             cls = int(box_score_cls[5])
             conf = box_score_cls[4]
             w = float(box[2] - box[0])
@@ -155,7 +156,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
             # object results
             results = []
             confidence_data = dataprocess.CObjectMeasure(dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
-                                                         conf,
+                                                         float(conf),
                                                          graphics_box.getId(),
                                                          name)
             box_data = dataprocess.CObjectMeasure(dataprocess.CMeasure(core.MeasureId.BBOX),
