@@ -88,13 +88,10 @@ class InferYoloV7(dataprocess.C2dImageTask):
 
     def __init__(self, name, param):
         dataprocess.C2dImageTask.__init__(self, name)
-        # Add graphics output
-        self.addOutput(dataprocess.CGraphicsOutput())
-        # Add numeric output
-        self.addOutput(dataprocess.CBlobMeasureIO())
+        # Add object detection output
+        self.addOutput(dataprocess.CObjectDetectionIO())
 
-        self.graphics_output = None
-        self.numeric_output = None
+        self.obj_detect_output = None
         self.model = None
         self.weights = ""
         self.device = torch.device("cpu")
@@ -143,30 +140,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
             h = float(box[3] - box[1])
             x = float(box[0])
             y = float(box[1])
-            prop_rect = core.GraphicsRectProperty()
-            prop_rect.pen_color = self.colors[cls]
-            graphics_box = self.graphics_output.addRectangle(x, y, w, h, prop_rect)
-            graphics_box.setCategory(self.classes[cls])
-            # Label
-            name = self.classes[cls]
-            prop_text = core.GraphicsTextProperty()
-            prop_text.font_size = 8
-            prop_text.color = self.colors[cls]
-            prop_text.bold = True
-            self.graphics_output.addText(name, x, y, prop_text)
-            # object results
-            results = []
-            confidence_data = dataprocess.CObjectMeasure(dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
-                                                         float(conf),
-                                                         graphics_box.getId(),
-                                                         name)
-            box_data = dataprocess.CObjectMeasure(dataprocess.CMeasure(core.MeasureId.BBOX),
-                                                  [x, y, w, h],
-                                                  graphics_box.getId(),
-                                                  name)
-            results.append(confidence_data)
-            results.append(box_data)
-            self.numeric_output.addObjectMeasures(results)
+            self.obj_detect_output.addObject(self.classes[cls], float(conf), x, y, w, h, self.colors[cls])
 
     def run(self):
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
@@ -179,8 +153,8 @@ class InferYoloV7(dataprocess.C2dImageTask):
         input = self.getInput(0)
 
         # Get outputs :
-        self.graphics_output = self.getOutput(1)
-        self.numeric_output = self.getOutput(2)
+        self.obj_detect_output = self.getOutput(1)
+        self.obj_detect_output.init("YoloV7", 0)
 
         # Forward input image
         self.forwardInputImage(0, 0)
@@ -192,15 +166,18 @@ class InferYoloV7(dataprocess.C2dImageTask):
             self.iou_conf = param.iou_conf
             self.thr_conf = param.thr_conf
             print("Will run on {}".format(self.device.type))
+
             if param.custom_train:
                 self.weights = param.custom_model
             else:
                 weights_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
                 if not os.path.isdir(weights_folder):
                     os.mkdir(weights_folder)
+
                 self.weights = os.path.join(weights_folder, param.pretrain_model + '.pt')
                 if not os.path.isfile(self.weights):
                     download_model(param.pretrain_model, weights_folder)
+
             self.model = attempt_load(self.weights, map_location=self.device)  # load FP32 model
             self.classes = self.model.names
             random.seed(0)
@@ -208,12 +185,15 @@ class InferYoloV7(dataprocess.C2dImageTask):
             # remove added path in pythonpath after loading model
             self.stride = int(self.model.stride.max())  # model stride
             self.imgsz = check_img_size(param.img_size, s=self.stride)  # check img_size
+
             if self.device.type != 'cpu':
                 self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(
                     next(self.model.parameters())))  # run once
+
             half = self.device.type != 'cpu'  # half precision only supported on CUDA
             if half:
                 self.model.half()  # to FP16
+
             param.update = False
 
         # Get image from input/output (numpy array):
@@ -244,7 +224,7 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         self.info.description = "This plugin proposes inference on YOLOv7 object detection models."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.0.0"
+        self.info.version = "1.1.0"
         self.info.iconPath = "icons/icon.png"
         self.info.authors = "Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark"
         self.info.article = "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors"
