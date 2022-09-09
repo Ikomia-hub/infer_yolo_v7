@@ -129,7 +129,9 @@ class InferYoloV7(dataprocess.C2dImageTask):
         # Apply NMS
         pred = non_max_suppression(pred, self.thr_conf, self.iou_conf, classes=None, agnostic=False)[0]
 
+        index = 0
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
+
         for p in pred:
             box_score_cls = [e for e in p.detach().cpu().numpy()]
             box = box_score_cls[:4]
@@ -140,7 +142,8 @@ class InferYoloV7(dataprocess.C2dImageTask):
             h = float(box[3] - box[1])
             x = float(box[0])
             y = float(box[1])
-            self.obj_detect_output.addObject(self.classes[cls], float(conf), x, y, w, h, self.colors[cls])
+            self.obj_detect_output.addObject(index, self.classes[cls], float(conf), x, y, w, h, self.colors[cls])
+            index += 1
 
     def run(self):
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
