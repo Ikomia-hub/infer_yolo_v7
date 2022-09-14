@@ -16,10 +16,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from ikomia import core, dataprocess
+from ikomia import utils, core, dataprocess
 import copy
-# Your imports below
-from distutils.util import strtobool
 import os
 from infer_yolo_v7.ikutils import download_model
 import torch
@@ -29,8 +27,9 @@ from infer_yolo_v7.yolov7.utils.general import check_img_size, non_max_suppressi
 import sys
 import numpy as np
 import random
-
 import types
+
+
 def imports():
     for name, val in globals().items():
         if isinstance(val, types.ModuleType):
@@ -58,9 +57,9 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
         self.img_size = int(param_map["img_size"])
-        self.custom_train = strtobool(param_map["custom_train"])
+        self.custom_train = utils.strtobool(param_map["custom_train"])
         self.pretrain_model = str(param_map["pretrain_model"])
-        self.cuda = strtobool(param_map["cuda"])
+        self.cuda = utils.strtobool(param_map["cuda"])
         self.thr_conf = float(param_map["thr_conf"])
         self.iou_conf = float(param_map["iou_conf"])
         self.custom_model = param_map["custom_model"]
