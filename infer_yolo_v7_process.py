@@ -30,11 +30,6 @@ import numpy as np
 import random
 
 
-def imports():
-    for name, val in globals().items():
-        if isinstance(val, types.ModuleType):
-            yield val.__name__
-
 # --------------------
 # - Class to handle the process parameters
 # - Inherits PyCore.CWorkflowTaskParam from Ikomia API
