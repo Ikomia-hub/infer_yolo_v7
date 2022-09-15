@@ -24,10 +24,10 @@ import torch
 from infer_yolo_v7.yolov7.models.experimental import attempt_load
 from infer_yolo_v7.yolov7.utils.datasets import letterbox
 from infer_yolo_v7.yolov7.utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
-import sys
+from infer_yolo_v7.yolov7.models.yolo import Model
+from infer_yolo_v7.yolov7.utils.torch_utils import torch_load
 import numpy as np
 import random
-import types
 
 
 def imports():
@@ -170,7 +170,21 @@ class InferYoloV7(dataprocess.C2dImageTask):
             print("Will run on {}".format(self.device.type))
 
             if param.custom_train:
-                self.weights = param.custom_model
+                ckpt = torch_load(param.custom_model, device=self.device)
+                # custom model trained with ikomia
+                if "yaml" in ckpt:
+                    cfg = ckpt["yaml"]
+                    self.classes = ckpt["names"]
+                    state_dict = ckpt["state_dict"]
+                    self.model = Model(cfg=cfg, ch=3, nc=len(self.classes), anchors=None)
+                    self.model.load_state_dict(state_dict)
+                    self.model.float().fuse().eval().to(self.device)
+                    del ckpt
+                # other
+                else:
+                    del ckpt
+                    self.model = attempt_load(param.custom_model, map_location=self.device)  # load FP32 model
+                    self.classes = self.model.names
             else:
                 weights_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
                 if not os.path.isdir(weights_folder):
@@ -180,8 +194,8 @@ class InferYoloV7(dataprocess.C2dImageTask):
                 if not os.path.isfile(self.weights):
                     download_model(param.pretrain_model, weights_folder)
 
-            self.model = attempt_load(self.weights, map_location=self.device)  # load FP32 model
-            self.classes = self.model.names
+                self.model = attempt_load(self.weights, map_location=self.device)  # load FP32 model
+                self.classes = self.model.names
             random.seed(0)
             self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.classes]
             # remove added path in pythonpath after loading model
