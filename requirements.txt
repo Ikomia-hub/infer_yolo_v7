@@ -2,7 +2,7 @@
 --find-links https://download.pytorch.org/whl/cu111/torch_stable.html
 # Base ----------------------------------------
 matplotlib == 3.4.3
-numpy >= 1.20
+numpy >= 1.20.3
 Pillow == 8.1.0
 PyYAML >= 5.3.1
 requests >= 2.23.0
