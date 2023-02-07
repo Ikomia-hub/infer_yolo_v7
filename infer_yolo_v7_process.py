@@ -114,7 +114,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
         img = img.transpose(2, 0, 1)  # HxWxC, to CxHxW
         img = np.ascontiguousarray(img)
         img = torch.from_numpy(img).to(self.device)
-        img = img.half() if self.device.type == 'cuda' else img.float()  # uint8 to fp16/32
+        img = img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
@@ -200,10 +200,6 @@ class InferYoloV7(dataprocess.C2dImageTask):
             if self.device.type != 'cpu':
                 self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(
                     next(self.model.parameters())))  # run once
-
-            half = self.device.type != 'cpu'  # half precision only supported on CUDA
-            if half:
-                self.model.half()  # to FP16
 
             param.update = False
 
