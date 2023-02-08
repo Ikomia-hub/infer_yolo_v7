@@ -51,6 +51,8 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
                                                           min=0., max=1., step=0.01, decimals=2)
         self.spin_iou_conf = pyqtutils.append_double_spin(self.gridLayout, "Confidence IOU", self.parameters.iou_conf,
                                                           min=0., max=1., step=0.01, decimals=2)
+        self.check_half_precision = pyqtutils.append_check(self.gridLayout, "Half precision", self.parameters.fp16)
+        self.check_half_precision.setEnabled(True)
         self.check_custom_train = pyqtutils.append_check(self.gridLayout, "Custom train", self.parameters.custom_train)
         self.check_custom_train.stateChanged.connect(self.on_custom_train_changed)
         self.combo_pretrain_model = pyqtutils.append_combo(self.gridLayout, "Model name")
@@ -76,6 +78,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         # Get parameters from widget
         # Example : self.parameters.windowSize = self.spinWindowSize.value()
         self.parameters.cuda = self.check_cuda.isChecked()
+        self.parameters.fp16 = self.check_half_precision.isChecked()
         self.parameters.custom_train = self.check_custom_train.isChecked()
         self.parameters.img_size = self.spin_img_size.value()
         self.parameters.pretrain_model = self.combo_pretrain_model.currentText()

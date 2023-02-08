@@ -43,6 +43,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.custom_train = False
         self.pretrain_model = 'yolov7'
         self.cuda = torch.cuda.is_available()
+        self.fp16 = False
         self.thr_conf = 0.25
         self.iou_conf = 0.5
         self.custom_model = ""
@@ -55,6 +56,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.custom_train = utils.strtobool(param_map["custom_train"])
         self.pretrain_model = str(param_map["pretrain_model"])
         self.cuda = utils.strtobool(param_map["cuda"])
+        self.cuda = utils.strtobool(param_map["fp16"])
         self.thr_conf = float(param_map["thr_conf"])
         self.iou_conf = float(param_map["iou_conf"])
         self.custom_model = param_map["custom_model"]
@@ -70,6 +72,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         param_map["thr_conf"] = str(self.thr_conf)
         param_map["iou_conf"] = str(self.iou_conf)
         param_map["cuda"] = str(self.cuda)
+        param_map["fp16"] = str(self.fp16)
         param_map["custom_model"] = str(self.custom_model)
         return param_map
 
@@ -95,8 +98,6 @@ class InferYoloV7(dataprocess.C2dImageTask):
         self.iou_conf = 0.45
         self.classes = None
         self.colors = None
-        self.infer_fp32 = False
-        self.infer_fp32_stop = False
         # Create parameters class
         if param is None:
             self.setParam(InferYoloV7Param())
@@ -117,7 +118,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
         img = img.transpose(2, 0, 1)  # HxWxC, to CxHxW
         img = np.ascontiguousarray(img)
         img = torch.from_numpy(img).to(self.device)
-        if self.infer_fp32 is False:
+        if param.fp16 is True:
             img = img.half() if self.device.type == 'cuda' else img.float()  # uint8 to fp16/32
         else:
             img = img.float()  # uint8 to fp16/32
@@ -136,14 +137,6 @@ class InferYoloV7(dataprocess.C2dImageTask):
 
         index = 0
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
-
-        # Run FP32 inference once if FP16's output is empty
-        if len(pred.detach().cpu().numpy()) == 0 :
-            if self.infer_fp32_stop is False:
-                param.update = True
-                self.infer_fp32 = True
-                self.run()
-                self.infer_fp32_stop = True
 
         for p in pred:
             box_score_cls = [e for e in p.detach().cpu().numpy()]
@@ -225,7 +218,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
                 self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(
                     next(self.model.parameters())))  # run once
 
-            if self.infer_fp32 is False:
+            if param.fp16 is True:
                 half = self.device.type != 'cpu'  # half precision only supported on CUDA
                 if half:
                     self.model.half()  # to FP16
