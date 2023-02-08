@@ -95,7 +95,8 @@ class InferYoloV7(dataprocess.C2dImageTask):
         self.iou_conf = 0.45
         self.classes = None
         self.colors = None
-
+        self.infer_fp32 = False
+        self.infer_fp32_stop = False
         # Create parameters class
         if param is None:
             self.setParam(InferYoloV7Param())
@@ -108,23 +109,41 @@ class InferYoloV7(dataprocess.C2dImageTask):
         return 1
 
     def infer(self, img0):
+        # Get parameters :
+        param = self.getParam()
         # Padded resize
         img = letterbox(img0, self.imgsz, stride=self.stride)[0]
         # Convert
         img = img.transpose(2, 0, 1)  # HxWxC, to CxHxW
         img = np.ascontiguousarray(img)
         img = torch.from_numpy(img).to(self.device)
-        img = img.float()  # uint8 to fp16/32
+        if self.infer_fp32 is False:
+            img = img.half() if self.device.type == 'cuda' else img.float()  # uint8 to fp16/32
+        else:
+            img = img.float()  # uint8 to fp16/32
+
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
 
         pred = self.model(img)[0]
         # Apply NMS
-        pred = non_max_suppression(pred, self.thr_conf, self.iou_conf, classes=None, agnostic=False)[0]
+        pred = non_max_suppression(pred, 
+                                   self.thr_conf,
+                                   self.iou_conf,
+                                   classes=None,
+                                   agnostic=False)[0]
 
         index = 0
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
+
+        # Run FP32 inference once if FP16's output is empty
+        if len(pred.detach().cpu().numpy()) == 0 :
+            if self.infer_fp32_stop is False:
+                param.update = True
+                self.infer_fp32 = True
+                self.run()
+                self.infer_fp32_stop = True
 
         for p in pred:
             box_score_cls = [e for e in p.detach().cpu().numpy()]
@@ -136,7 +155,11 @@ class InferYoloV7(dataprocess.C2dImageTask):
             h = float(box[3] - box[1])
             x = float(box[0])
             y = float(box[1])
-            self.obj_detect_output.addObject(index, self.classes[cls], float(conf), x, y, w, h, self.colors[cls])
+            self.obj_detect_output.addObject(index,
+                                             self.classes[cls],
+                                             float(conf),
+                                             x, y, w, h,
+                                             self.colors[cls])
             index += 1
 
     def run(self):
@@ -178,7 +201,8 @@ class InferYoloV7(dataprocess.C2dImageTask):
                 # other
                 else:
                     del ckpt
-                    self.model = attempt_load(param.custom_model, map_location=self.device)  # load FP32 model
+                    self.model = attempt_load(param.custom_model,
+                                              map_location=self.device)  # load FP32 model
                     self.classes = self.model.names
             else:
                 weights_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
@@ -200,6 +224,11 @@ class InferYoloV7(dataprocess.C2dImageTask):
             if self.device.type != 'cpu':
                 self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(
                     next(self.model.parameters())))  # run once
+
+            if self.infer_fp32 is False:
+                half = self.device.type != 'cpu'  # half precision only supported on CUDA
+                if half:
+                    self.model.half()  # to FP16
 
             param.update = False
 
