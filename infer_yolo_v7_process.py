@@ -48,7 +48,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.custom_model = ""
         self.update = False
 
-    def setParamMap(self, param_map):
+    def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
         self.img_size = int(param_map["img_size"])
@@ -60,10 +60,10 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.custom_model = param_map["custom_model"]
         self.update = True
 
-    def getParamMap(self):
+    def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
-        param_map = core.ParamMap()
+        param_map = {}
         param_map["custom_train"] = str(self.custom_train)
         param_map["img_size"] = str(self.img_size)
         param_map['pretrain_model'] = str(self.pretrain_model)
@@ -78,14 +78,12 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
 # - Class which implements the process
 # - Inherits PyCore.CWorkflowTask or derived from Ikomia API
 # --------------------
-class InferYoloV7(dataprocess.C2dImageTask):
+class InferYoloV7(dataprocess.CObjectDetectionTask):
 
     def __init__(self, name, param):
-        dataprocess.C2dImageTask.__init__(self, name)
+        dataprocess.CObjectDetectionTask.__init__(self, name)
         # Add object detection output
-        self.addOutput(dataprocess.CObjectDetectionIO())
 
-        self.obj_detect_output = None
         self.model = None
         self.weights = ""
         self.device = torch.device("cpu")
@@ -98,11 +96,11 @@ class InferYoloV7(dataprocess.C2dImageTask):
 
         # Create parameters class
         if param is None:
-            self.setParam(InferYoloV7Param())
+            self.set_param_object(InferYoloV7Param())
         else:
-            self.setParam(copy.deepcopy(param))
+            self.set_param_object(copy.deepcopy(param))
 
-    def getProgressSteps(self):
+    def get_progress_steps(self):
         # Function returning the number of progress steps for this process
         # This is handled by the main progress bar of Ikomia application
         return 1
@@ -136,27 +134,23 @@ class InferYoloV7(dataprocess.C2dImageTask):
             h = float(box[3] - box[1])
             x = float(box[0])
             y = float(box[1])
-            self.obj_detect_output.addObject(index, self.classes[cls], float(conf), x, y, w, h, self.colors[cls])
+            self.add_object(index, cls, float(conf), x, y, w, h)
             index += 1
 
     def run(self):
         os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
         # Core function of your process
-        # Call beginTaskRun for initialization
-        self.beginTaskRun()
+        # Call begin_task_run for initialization
+        self.begin_task_run()
 
         # Get input :
-        input = self.getInput(0)
-
-        # Get outputs :
-        self.obj_detect_output = self.getOutput(1)
-        self.obj_detect_output.init("YoloV7", 0)
+        input = self.get_input(0)
 
         # Forward input image
-        self.forwardInputImage(0, 0)
+        self.forward_input_image(0, 0)
         # Get parameters :
-        param = self.getParam()
+        param = self.get_param_object()
 
         if param.update or self.model is None:
             self.device = torch.device("cuda") if param.cuda else torch.device("cpu")
@@ -192,7 +186,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
                 self.model = attempt_load(self.weights, map_location=self.device)  # load FP32 model
                 self.classes = self.model.names
             random.seed(0)
-            self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.classes]
+            self.set_names(self.classes)
             # remove added path in pythonpath after loading model
             self.stride = int(self.model.stride.max())  # model stride
             self.imgsz = check_img_size(param.img_size, s=self.stride)  # check img_size
@@ -208,17 +202,17 @@ class InferYoloV7(dataprocess.C2dImageTask):
             param.update = False
 
         # Get image from input/output (numpy array):
-        srcImage = input.getImage()
+        srcImage = input.get_image()
 
         # Call to the process main routine
         with torch.no_grad():
             self.infer(srcImage)
 
         # Step progress bar:
-        self.emitStepProgress()
+        self.emit_step_progress()
 
-        # Call endTaskRun to finalize process
-        self.endTaskRun()
+        # Call end_task_run to finalize process
+        self.end_task_run()
 
 
 # --------------------
@@ -231,19 +225,19 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "infer_yolo_v7"
-        self.info.shortDescription = "YOLOv7 object detection models."
+        self.info.short_description = "YOLOv7 object detection models."
         self.info.description = "This plugin proposes inference on YOLOv7 object detection models."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.1.0"
-        self.info.iconPath = "icons/icon.png"
+        self.info.version = "1.2.0"
+        self.info.icon_path = "icons/icon.png"
         self.info.authors = "Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark"
         self.info.article = "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors"
         self.info.journal = "arxiv"
         self.info.year = 2022
         self.info.license = "GPL-3.0"
         # URL of documentation
-        self.info.documentationLink = ""
+        self.info.documentation_link = ""
         # Code source repository
         self.info.repository = "https://github.com/WongKinYiu/yolov7"
         # Keywords used for search

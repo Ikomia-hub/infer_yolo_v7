@@ -65,13 +65,13 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
         # Set widget layout
-        self.setLayout(layout_ptr)
+        self.set_layout(layout_ptr)
 
     def on_custom_train_changed(self, name):
         self.combo_pretrain_model.setEnabled(not self.check_custom_train.isChecked())
         self.browse_custom_model.setEnabled(self.check_custom_train.isChecked())
 
-    def onApply(self):
+    def on_apply(self):
         # Apply button clicked slot
         # Get parameters from widget
         # Example : self.parameters.windowSize = self.spinWindowSize.value()
@@ -84,7 +84,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.parameters.custom_model = self.browse_custom_model.path
         self.parameters.update = True
         # Send signal to launch the process
-        self.emitApply(self.parameters)
+        self.emit_apply(self.parameters)
 
 
 # --------------------
