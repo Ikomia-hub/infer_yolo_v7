@@ -28,6 +28,8 @@ import random
 import cv2
 import onnxruntime as ort
 import yaml
+import onnx
+import ast
 
 # --------------------
 # - Class to handle the process parameters
@@ -162,6 +164,7 @@ class InferYoloV7(dataprocess.C2dImageTask):
         # Get parameters :
         param = self.getParam()
 
+
         with open(self.coco_data) as f:
             data = yaml.load(f, Loader=yaml.FullLoader)
             names = data["names"]
@@ -170,6 +173,15 @@ class InferYoloV7(dataprocess.C2dImageTask):
             self.device = torch.device("cpu")
             print("Will run on {}".format(self.device.type))
             self.session = ort.InferenceSession(param.weights, providers=self.providers)
+            onnx_model = onnx.load(param.weights)
+            
+            if len(onnx_model.metadata_props) > 0:
+                names = ast.literal_eval(onnx_model.metadata_props[0].value)
+            else:
+                with open(self.coco_data) as f:
+                    data = yaml.load(f, Loader=yaml.FullLoader)
+                    names = data["names"]
+                    
             self.classes = names
             random.seed(0)
             self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in self.classes]
