@@ -53,14 +53,14 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
                                                           min=0., max=1., step=0.01, decimals=2)
         self.check_use_custom_model = pyqtutils.append_check(self.gridLayout, "Custom train", self.parameters.use_custom_model)
         self.check_use_custom_model.stateChanged.connect(self.on_custom_train_changed)
-        self.combo_pretrain_model = pyqtutils.append_combo(self.gridLayout, "Model name")
+        self.combo_model_name = pyqtutils.append_combo(self.gridLayout, "Model name")
         for name in model_zoo.keys():
-            self.combo_pretrain_model.addItem(name)
-        self.combo_pretrain_model.setCurrentText(self.parameters.pretrain_model)
-        self.combo_pretrain_model.setEnabled(not self.parameters.use_custom_model)
-        self.browse_custom_model = pyqtutils.append_browse_file(self.gridLayout, "Custom model",
-                                                                self.parameters.custom_model)
-        self.browse_custom_model.setEnabled(self.parameters.use_custom_model)
+            self.combo_model_name.addItem(name)
+        self.combo_model_name.setCurrentText(self.parameters.model_name)
+        self.combo_model_name.setEnabled(not self.parameters.use_custom_model)
+        self.browse_model_path = pyqtutils.append_browse_file(self.gridLayout, "Custom model",
+                                                                self.parameters.model_path)
+        self.browse_model_path.setEnabled(self.parameters.use_custom_model)
         # PyQt -> Qt wrapping
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
@@ -68,8 +68,8 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.set_layout(layout_ptr)
 
     def on_custom_train_changed(self, name):
-        self.combo_pretrain_model.setEnabled(not self.check_use_custom_model.isChecked())
-        self.browse_custom_model.setEnabled(self.check_use_custom_model.isChecked())
+        self.combo_model_name.setEnabled(not self.check_use_custom_model.isChecked())
+        self.browse_model_path.setEnabled(self.check_use_custom_model.isChecked())
 
     def on_apply(self):
         # Apply button clicked slot
@@ -78,10 +78,10 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.parameters.cuda = self.check_cuda.isChecked()
         self.parameters.use_custom_model = self.check_use_custom_model.isChecked()
         self.parameters.input_size = self.spin_input_size.value()
-        self.parameters.pretrain_model = self.combo_pretrain_model.currentText()
+        self.parameters.model_name = self.combo_model_name.currentText()
         self.parameters.iou_thres = self.spin_iou_thres.value()
         self.parameters.conf_thres = self.spin_conf_thres.value()
-        self.parameters.custom_model = self.browse_custom_model.path
+        self.parameters.model_path = self.browse_model_path.path
         self.parameters.update = True
         # Send signal to launch the process
         self.emit_apply(self.parameters)

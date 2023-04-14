@@ -41,11 +41,11 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         # Place default value initialization here
         self.input_size = 640
         self.use_custom_model = False
-        self.pretrain_model = 'yolov7'
+        self.model_name = 'yolov7'
         self.cuda = torch.cuda.is_available()
         self.conf_thres = 0.25
         self.iou_thres = 0.5
-        self.custom_model = ""
+        self.model_path = ""
         self.model_name_or_path = ""
         self.update = False
 
@@ -54,11 +54,11 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         # Parameters values are stored as string and accessible like a python dict
         self.input_size = int(param_map["input_size"])
         self.use_custom_model = utils.strtobool(param_map["use_custom_model"])
-        self.pretrain_model = str(param_map["pretrain_model"])
+        self.model_name = str(param_map["model_name"])
         self.cuda = utils.strtobool(param_map["cuda"])
         self.conf_thres = float(param_map["conf_thres"])
         self.iou_thres = float(param_map["iou_thres"])
-        self.custom_model = param_map["custom_model"]
+        self.model_path = param_map["model_path"]
         self.model_name_or_path = str(param_map["model_name_or_path"])
         self.update = True
 
@@ -66,14 +66,15 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {}
+        param_map["model_name_or_path"] = str(self.model_name_or_path)
         param_map["use_custom_model"] = str(self.use_custom_model)
         param_map["input_size"] = str(self.input_size)
-        param_map['pretrain_model'] = str(self.pretrain_model)
+        param_map['model_name'] = str(self.model_name)
         param_map["conf_thres"] = str(self.conf_thres)
         param_map["iou_thres"] = str(self.iou_thres)
         param_map["cuda"] = str(self.cuda)
-        param_map["custom_model"] = str(self.custom_model)
-        param_map["model_name_or_path"] = str(self.model_name_or_path)
+        param_map["model_path"] = str(self.model_path)
+        
         return param_map
 
 
@@ -164,12 +165,12 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
             if param.model_name_or_path != "":
                 if os.path.isfile(param.model_name_or_path):
                     param.use_custom_model = True
-                    param.custom_model = param.model_name_or_path
+                    param.model_path = param.model_name_or_path
                 else:
-                    param.pretrain_model = param.model_name_or_path
+                    param.model_name = param.model_name_or_path
 
             if param.use_custom_model:
-                ckpt = torch_load(param.custom_model, device=self.device)
+                ckpt = torch_load(param.model_path, device=self.device)
                 # custom model trained with ikomia
                 if "yaml" in ckpt:
                     cfg = ckpt["yaml"]
@@ -182,16 +183,16 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
                 # other
                 else:
                     del ckpt
-                    self.model = attempt_load(param.custom_model, map_location=self.device)  # load FP32 model
+                    self.model = attempt_load(param.model_path, map_location=self.device)  # load FP32 model
                     self.classes = self.model.names
             else:
                 weights_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
                 if not os.path.isdir(weights_folder):
                     os.mkdir(weights_folder)
 
-                self.weights = os.path.join(weights_folder, param.pretrain_model + '.pt')
+                self.weights = os.path.join(weights_folder, param.model_name + '.pt')
                 if not os.path.isfile(self.weights):
-                    download_model(param.pretrain_model, weights_folder)
+                    download_model(param.model_name, weights_folder)
 
                 self.model = attempt_load(self.weights, map_location=self.device)  # load FP32 model
                 self.classes = self.model.names
