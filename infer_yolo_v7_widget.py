@@ -49,7 +49,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.spin_conf_thres = pyqtutils.append_double_spin(self.gridLayout, "Confidence threshold",
                                                           self.parameters.conf_thres,
                                                           min=0., max=1., step=0.01, decimals=2)
-        self.spin_iou_conf = pyqtutils.append_double_spin(self.gridLayout, "Confidence IOU", self.parameters.iou_conf,
+        self.spin_iou_thres = pyqtutils.append_double_spin(self.gridLayout, "Confidence IOU", self.parameters.iou_thres,
                                                           min=0., max=1., step=0.01, decimals=2)
         self.check_use_custom_model = pyqtutils.append_check(self.gridLayout, "Custom train", self.parameters.use_custom_model)
         self.check_use_custom_model.stateChanged.connect(self.on_custom_train_changed)
@@ -79,7 +79,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.parameters.use_custom_model = self.check_use_custom_model.isChecked()
         self.parameters.input_size = self.spin_input_size.value()
         self.parameters.pretrain_model = self.combo_pretrain_model.currentText()
-        self.parameters.iou_conf = self.spin_iou_conf.value()
+        self.parameters.iou_thres = self.spin_iou_thres.value()
         self.parameters.conf_thres = self.spin_conf_thres.value()
         self.parameters.custom_model = self.browse_custom_model.path
         self.parameters.update = True

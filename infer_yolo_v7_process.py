@@ -44,7 +44,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.pretrain_model = 'yolov7'
         self.cuda = torch.cuda.is_available()
         self.conf_thres = 0.25
-        self.iou_conf = 0.5
+        self.iou_thres = 0.5
         self.custom_model = ""
         self.model_name_or_path = ""
         self.update = False
@@ -57,7 +57,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.pretrain_model = str(param_map["pretrain_model"])
         self.cuda = utils.strtobool(param_map["cuda"])
         self.conf_thres = float(param_map["conf_thres"])
-        self.iou_conf = float(param_map["iou_conf"])
+        self.iou_thres = float(param_map["iou_thres"])
         self.custom_model = param_map["custom_model"]
         self.model_name_or_path = str(param_map["model_name_or_path"])
         self.update = True
@@ -70,7 +70,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         param_map["input_size"] = str(self.input_size)
         param_map['pretrain_model'] = str(self.pretrain_model)
         param_map["conf_thres"] = str(self.conf_thres)
-        param_map["iou_conf"] = str(self.iou_conf)
+        param_map["iou_thres"] = str(self.iou_thres)
         param_map["cuda"] = str(self.cuda)
         param_map["custom_model"] = str(self.custom_model)
         param_map["model_name_or_path"] = str(self.model_name_or_path)
@@ -93,7 +93,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
         self.stride = 32
         self.imgsz = 640
         self.conf_thres = 0.25
-        self.iou_conf = 0.45
+        self.iou_thres = 0.45
         self.classes = None
         self.colors = None
 
@@ -122,7 +122,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
 
         pred = self.model(img)[0]
         # Apply NMS
-        pred = non_max_suppression(pred, self.conf_thres, self.iou_conf, classes=None, agnostic=False)[0]
+        pred = non_max_suppression(pred, self.conf_thres, self.iou_thres, classes=None, agnostic=False)[0]
 
         index = 0
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
@@ -157,7 +157,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
 
         if param.update or self.model is None:
             self.device = torch.device("cuda") if param.cuda else torch.device("cpu")
-            self.iou_conf = param.iou_conf
+            self.iou_thres = param.iou_thres
             self.conf_thres = param.conf_thres
             print("Will run on {}".format(self.device.type))
 
