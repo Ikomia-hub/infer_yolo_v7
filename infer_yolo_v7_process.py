@@ -39,38 +39,41 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
     def __init__(self):
         core.CWorkflowTaskParam.__init__(self)
         # Place default value initialization here
-        self.img_size = 640
-        self.custom_train = False
+        self.input_size = 640
+        self.use_custom_model = False
         self.pretrain_model = 'yolov7'
         self.cuda = torch.cuda.is_available()
-        self.thr_conf = 0.25
+        self.conf_thres = 0.25
         self.iou_conf = 0.5
         self.custom_model = ""
+        self.model_name_or_path = ""
         self.update = False
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        self.img_size = int(param_map["img_size"])
-        self.custom_train = utils.strtobool(param_map["custom_train"])
+        self.input_size = int(param_map["input_size"])
+        self.use_custom_model = utils.strtobool(param_map["use_custom_model"])
         self.pretrain_model = str(param_map["pretrain_model"])
         self.cuda = utils.strtobool(param_map["cuda"])
-        self.thr_conf = float(param_map["thr_conf"])
+        self.conf_thres = float(param_map["conf_thres"])
         self.iou_conf = float(param_map["iou_conf"])
         self.custom_model = param_map["custom_model"]
+        self.model_name_or_path = str(param_map["model_name_or_path"])
         self.update = True
 
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {}
-        param_map["custom_train"] = str(self.custom_train)
-        param_map["img_size"] = str(self.img_size)
+        param_map["use_custom_model"] = str(self.use_custom_model)
+        param_map["input_size"] = str(self.input_size)
         param_map['pretrain_model'] = str(self.pretrain_model)
-        param_map["thr_conf"] = str(self.thr_conf)
+        param_map["conf_thres"] = str(self.conf_thres)
         param_map["iou_conf"] = str(self.iou_conf)
         param_map["cuda"] = str(self.cuda)
         param_map["custom_model"] = str(self.custom_model)
+        param_map["model_name_or_path"] = str(self.model_name_or_path)
         return param_map
 
 
@@ -89,7 +92,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
         self.device = torch.device("cpu")
         self.stride = 32
         self.imgsz = 640
-        self.thr_conf = 0.25
+        self.conf_thres = 0.25
         self.iou_conf = 0.45
         self.classes = None
         self.colors = None
@@ -119,7 +122,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
 
         pred = self.model(img)[0]
         # Apply NMS
-        pred = non_max_suppression(pred, self.thr_conf, self.iou_conf, classes=None, agnostic=False)[0]
+        pred = non_max_suppression(pred, self.conf_thres, self.iou_conf, classes=None, agnostic=False)[0]
 
         index = 0
         pred[:, :4] = scale_coords(img.shape[2:], pred, img0.shape)[:, :4]
@@ -155,10 +158,17 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
         if param.update or self.model is None:
             self.device = torch.device("cuda") if param.cuda else torch.device("cpu")
             self.iou_conf = param.iou_conf
-            self.thr_conf = param.thr_conf
+            self.conf_thres = param.conf_thres
             print("Will run on {}".format(self.device.type))
 
-            if param.custom_train:
+            if param.model_name_or_path != "":
+                if os.path.isfile(param.model_name_or_path):
+                    param.use_custom_model = True
+                    param.custom_model = param.model_name_or_path
+                else:
+                    param.pretrain_model = param.model_name_or_path
+
+            if param.use_custom_model:
                 ckpt = torch_load(param.custom_model, device=self.device)
                 # custom model trained with ikomia
                 if "yaml" in ckpt:
@@ -189,7 +199,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
             self.set_names(self.classes)
             # remove added path in pythonpath after loading model
             self.stride = int(self.model.stride.max())  # model stride
-            self.imgsz = check_img_size(param.img_size, s=self.stride)  # check img_size
+            self.imgsz = check_img_size(param.input_size, s=self.stride)  # check img_size
 
             if self.device.type != 'cpu':
                 self.model(torch.zeros(1, 3, self.imgsz, self.imgsz).to(self.device).type_as(
