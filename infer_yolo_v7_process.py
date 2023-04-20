@@ -162,6 +162,8 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
             self.conf_thres = param.conf_thres
             print("Will run on {}".format(self.device.type))
 
+            if param.model_path != "":
+                param.use_custom_model = True
             if param.model_name_or_path != "":
                 if os.path.isfile(param.model_name_or_path):
                     param.use_custom_model = True
