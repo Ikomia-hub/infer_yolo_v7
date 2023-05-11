@@ -58,9 +58,9 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
             self.combo_model_name.addItem(name)
         self.combo_model_name.setCurrentText(self.parameters.model_name)
         self.combo_model_name.setEnabled(not self.parameters.use_custom_model)
-        self.browse_model_path = pyqtutils.append_browse_file(self.gridLayout, "Custom model",
-                                                                self.parameters.model_path)
-        self.browse_model_path.setEnabled(self.parameters.use_custom_model)
+        self.browse_model_weight_file = pyqtutils.append_browse_file(self.gridLayout, "Custom model",
+                                                                self.parameters.model_weight_file)
+        self.browse_model_weight_file.setEnabled(self.parameters.use_custom_model)
         # PyQt -> Qt wrapping
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
@@ -69,7 +69,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
 
     def on_custom_train_changed(self, name):
         self.combo_model_name.setEnabled(not self.check_use_custom_model.isChecked())
-        self.browse_model_path.setEnabled(self.check_use_custom_model.isChecked())
+        self.browse_model_weight_file.setEnabled(self.check_use_custom_model.isChecked())
 
     def on_apply(self):
         # Apply button clicked slot
@@ -81,7 +81,7 @@ class InferYoloV7Widget(core.CWorkflowTaskWidget):
         self.parameters.model_name = self.combo_model_name.currentText()
         self.parameters.iou_thres = self.spin_iou_thres.value()
         self.parameters.conf_thres = self.spin_conf_thres.value()
-        self.parameters.model_path = self.browse_model_path.path
+        self.parameters.model_weight_file = self.browse_model_weight_file.path
         self.parameters.update = True
         # Send signal to launch the process
         self.emit_apply(self.parameters)

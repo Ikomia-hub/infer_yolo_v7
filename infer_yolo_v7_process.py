@@ -45,8 +45,7 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.cuda = torch.cuda.is_available()
         self.conf_thres = 0.25
         self.iou_thres = 0.5
-        self.model_path = ""
-        self.model_name_or_path = ""
+        self.model_weight_file = ""
         self.update = False
 
     def set_values(self, param_map):
@@ -58,22 +57,20 @@ class InferYoloV7Param(core.CWorkflowTaskParam):
         self.cuda = utils.strtobool(param_map["cuda"])
         self.conf_thres = float(param_map["conf_thres"])
         self.iou_thres = float(param_map["iou_thres"])
-        self.model_path = param_map["model_path"]
-        self.model_name_or_path = str(param_map["model_name_or_path"])
+        self.model_weight_file = param_map["model_weight_file"]
         self.update = True
 
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {}
-        param_map["model_name_or_path"] = str(self.model_name_or_path)
         param_map["use_custom_model"] = str(self.use_custom_model)
         param_map["input_size"] = str(self.input_size)
         param_map['model_name'] = str(self.model_name)
         param_map["conf_thres"] = str(self.conf_thres)
         param_map["iou_thres"] = str(self.iou_thres)
         param_map["cuda"] = str(self.cuda)
-        param_map["model_path"] = str(self.model_path)
+        param_map["model_weight_file"] = str(self.model_weight_file)
         
         return param_map
 
@@ -162,17 +159,11 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
             self.conf_thres = param.conf_thres
             print("Will run on {}".format(self.device.type))
 
-            if param.model_path != "":
+            if param.model_weight_file != "":
                 param.use_custom_model = True
-            if param.model_name_or_path != "":
-                if os.path.isfile(param.model_name_or_path):
-                    param.use_custom_model = True
-                    param.model_path = param.model_name_or_path
-                else:
-                    param.model_name = param.model_name_or_path
 
             if param.use_custom_model:
-                ckpt = torch_load(param.model_path, device=self.device)
+                ckpt = torch_load(param.model_weight_file, device=self.device)
                 # custom model trained with ikomia
                 if "yaml" in ckpt:
                     cfg = ckpt["yaml"]
@@ -185,7 +176,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
                 # other
                 else:
                     del ckpt
-                    self.model = attempt_load(param.model_path, map_location=self.device)  # load FP32 model
+                    self.model = attempt_load(param.model_weight_file, map_location=self.device)  # load FP32 model
                     self.classes = self.model.names
             else:
                 weights_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "weights")
