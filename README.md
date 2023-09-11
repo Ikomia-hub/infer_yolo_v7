@@ -84,7 +84,7 @@ from ikomia.utils.displayIO import display
 wf = Workflow()
 
 # Add algorithm
-algo = wf.add_task(name="infer_torchvision_faster_rcnn", auto_connect=True)
+algo = wf.add_task(name="infer_yolo_v7", auto_connect=True)
 
 algo.set_parameters({
     "model_name": "yolov7",
