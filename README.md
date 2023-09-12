@@ -35,8 +35,6 @@ pip install ikomia
 
 #### 2. Create your workflow
 
-[Change the sample image URL to fit algorithm purpose]
-
 ```python
 from ikomia.dataprocess.workflow import Workflow
 from ikomia.utils.displayIO import display
@@ -75,6 +73,8 @@ Ikomia Studio offers a friendly UI with the same features as the API.
 - **iou_thres** (float) - default '0.5': Intersection over Union, degree of overlap between two boxes [0,1].
 - **cuda** (bool): If True, CUDA-based inference (GPU). If False, run on CPU.
 - **model_weight_file** (str, *optional*): Path to model weights file .pt. 
+
+**Parameters** should be in **strings format**  when added to the dictionary.
 
 ```python
 from ikomia.dataprocess.workflow import Workflow
