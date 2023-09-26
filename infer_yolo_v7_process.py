@@ -157,7 +157,7 @@ class InferYoloV7(dataprocess.CObjectDetectionTask):
         param = self.get_param_object()
 
         if param.update or self.model is None:
-            self.device = torch.device("cuda") if param.cuda else torch.device("cpu")
+            self.device = torch.device("cuda") if param.cuda and torch.cuda.is_available() else torch.device("cpu")
             self.iou_thres = param.iou_thres
             self.conf_thres = param.conf_thres
             print("Will run on {}".format(self.device.type))
@@ -236,7 +236,7 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         self.info.description = "This plugin proposes inference on YOLOv7 object detection models."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.2.0"
+        self.info.version = "1.2.1"
         self.info.icon_path = "icons/icon.png"
         self.info.authors = "Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark"
         self.info.article = "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors"
