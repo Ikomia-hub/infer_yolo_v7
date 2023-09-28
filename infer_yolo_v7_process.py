@@ -233,7 +233,6 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         # Set process information as string here
         self.info.name = "infer_yolo_v7"
         self.info.short_description = "YOLOv7 object detection models."
-        self.info.description = "This plugin proposes inference on YOLOv7 object detection models."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
         self.info.version = "1.2.1"
@@ -246,7 +245,8 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         # URL of documentation
         self.info.documentation_link = ""
         # Code source repository
-        self.info.repository = "https://github.com/WongKinYiu/yolov7"
+        self.info.repository = "https://github.com/Ikomia-hub/infer_yolo_v7"
+        self.info.original_repository = "https://github.com/WongKinYiu/yolov7"
         # Keywords used for search
         self.info.keywords = "yolo, v7, object, detection, real-time, coco"
 
