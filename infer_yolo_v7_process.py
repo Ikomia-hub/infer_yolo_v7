@@ -235,7 +235,7 @@ class InferYoloV7Factory(dataprocess.CTaskFactory):
         self.info.short_description = "YOLOv7 object detection models."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Detection"
-        self.info.version = "1.2.1"
+        self.info.version = "1.2.2"
         self.info.icon_path = "icons/icon.png"
         self.info.authors = "Wang, Chien-Yao and Bochkovskiy, Alexey and Liao, Hong-Yuan Mark"
         self.info.article = "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors"
